@@ -1986,30 +1986,31 @@ class DbHelper():
     def _get_duplicated_devicestats_id(self,device_id,key,value):
         my_db = DbHelper()
         
+        remove_id = None
         db_round = self.__db_config['db_round_filter']
         db_round_filter = json.loads(db_round)
         last_values = my_db.list_last_n_stats_of_device(device_id,key,ds_number=2)
         if last_values and len(last_values)>=2:
             # TODO, remove this, just for testing in developpement (actually in domogik.cfg)
             # Ex: db_round_filter = {"12" : { "total_space" : 1048576, "free_space" : 1048576, "percent_used" : 0.5, "used_space": 1048576 },"13" : { "hchp" : 500, "hchc" : 500, "papp" : 200 }}
-            self.log.debug("key=%s : value=%s / val0=%s / val1=%s (%s)" % (key,value,last_values[0].value,last_values[1].value,id))
             if str(last_values[1].device.id) in db_round_filter and key in db_round_filter[str(last_values[1].device.id)]:
                     round_value = db_round_filter[str(last_values[1].device.id)][last_values[1].skey]
-                    rvalue = int(float(value) / round_value) * round_value
-                    val0 = int(float(last_values[0].value) / round_value) * round_value
-                    val1 = int(float(last_values[1].value) / round_value) * round_value
-                    self.log.debug("rvalue=%s" % rvalue)
-                    self.log.debug("value=%s(%s) / val0=%s / val1=%s" % (rvalue,value,val0,val1))
+                    delta = abs(float(last_values[0].value) - float(last_values[1].value))
+
+                    if delta<round_value:
+                        delta0 = abs(float(value) - float(last_values[0].value))
+                        delta1 = abs(float(value) - float(last_values[1].value))
+
+                        if delta0<round_value and delta1<round_value:
+                            remove_id = last_values[1].id
             else:
-                rvalue = value
                 val0 = last_values[0].value
                 val1 = last_values[1].value
             
-            if val0 == val1 and val0 == rvalue:
-                self.log.debug("##################### REMOVE %s for %s(%s)" % (last_values[1].id,last_values[1].device.id,key))
-                return last_values[1].id
+                if val0 == val1 and val0 == value:
+                    remove_id = last_values[1].id
         
-        return None
+        return remove_id
 
 
     def add_device_stat(self, ds_timestamp, ds_key, ds_value, ds_device_id, hist_size=0):
@@ -2030,8 +2031,7 @@ class DbHelper():
         # Remove intermediate data
         duplicated_id = self._get_duplicated_devicestats_id(ds_device_id,ds_key,ds_value)
         if duplicated_id:
-            old_stat = self.__session.query(DeviceStats).filter_by(id=duplicated_id).first()
-            self.__session.delete(old_stat)
+            self.__session.query(DeviceStats).filter_by(id=duplicated_id).delete()
 
         if not self.__session.query(Device).filter_by(id=ds_device_id).first():
             self.__raise_dbhelper_exception("Couldn't add device stat with device id %s. It does not exist" % ds_device_id)
