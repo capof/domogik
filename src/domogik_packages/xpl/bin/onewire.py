@@ -44,8 +44,6 @@ from domogik_packages.xpl.lib.onewire import OneWireNetwork
 from domogik_packages.xpl.lib.onewire import ComponentDs18b20
 from domogik_packages.xpl.lib.onewire import ComponentDs18s20
 from domogik_packages.xpl.lib.onewire import ComponentDs2401
-from domogik_packages.xpl.lib.onewire import ComponentDs2438
-from domogik_packages.xpl.lib.onewire import ComponentDs2408
 import ow
 import traceback
 import time
@@ -68,8 +66,6 @@ class OneWireManager(XplPlugin):
                 cache = True
             else:
                 cache = False
-            ### Add Event listener
-            Listener(self.read_xpl, self.myxpl,{'schema':'sensor.basic'})
 
             ### DS18B20 config
             ds18b20_enabled = self._config.query('onewire', 'ds18b20-en')
@@ -88,17 +84,6 @@ class OneWireManager(XplPlugin):
 
             ds2401_interval = self._config.query('onewire', 'ds2401-int')
     
-            ### DS2438 config
-            ds2438_enabled = self._config.query('onewire', 'ds2438-en')
-
-            ds2438_interval = self._config.query('onewire', 'ds2438-int')
-    
-
-            ### DS2408 config
-            ds2408_enabled = self._config.query('onewire', 'ds2408-en')
-
-            ds2408_interval = self._config.query('onewire', 'ds2408-int')
-
 
             ### Open one wire network
             try:
@@ -154,38 +139,6 @@ class OneWireManager(XplPlugin):
                                            {})
                 ds2401.start()
     
-            ### DS2438 support
-            if ds2438_enabled == "True":
-                self.log.info("DS2438 support enabled")
-                ds2438 = threading.Thread(None, 
-                                           ComponentDs2438, 
-                                           "ds2438",
-                                           (self.log,
-                                            ow, 
-                                            float(ds2438_interval), 
-                                            self.send_xpl,
-                                            self.get_stop()),
-                                           {})
-                ds2438.start()
-    
-
-
-            ### DS2408 support
-            if ds2408_enabled == "True":
-                self.log.info("DS2408 support enabled")
-                ds2408 = threading.Thread(None,
-                                           ComponentDs2408,
-                                           "ds2408",
-                                           (self.log,
-                                            ow,
-                                            float(ds2408_interval),
-                                            self.send_xpl,
-                                            self.get_stop()),
-                                           {})
-                ds2408.start()
-
-
-
 
         except:
             self.log.error("Plugin error : stopping plugin... Trace : %s" % traceback.format_exc())
@@ -206,38 +159,6 @@ class OneWireManager(XplPlugin):
             msg.add_data({element : data[element]})
         self.log.debug("Send xpl message...")
         self.myxpl.send(msg)
-
-
-    def read_xpl(self, message):
-        switch = None
-        device = None
-        data = None
-        
-        if 'switch' in message.data:
-            switch = message.data['switch']
-        if 'device' in message.data:
-            device = message.data['device']
-        if 'data' in message.data:
-            data = message.data['data']
-
-        print "Message XPL %s" %message
-        if (switch != None and device != None and data != None):
-            r = self.ow.write(device, switch, data)
-            mess = XplMessage()
-            mess.set_type("xpl-trig")
-            mess.set_schema("sensor.basic")
-            mess.add_data({"device" :  device})
-            mess.add_data({"command" :  "switch"+switch})
-            self.myxpl.send(mess)
-            print "Setting PIO "+switch+"="+data+" for device "+device
-
-            mess2 = XplMessage()
-            mess2.set_type("xpl-trig")
-            mess2.set_schema("sensor.basic")
-            mess2.add_data({"device" :  device})
-            mess2.add_data({"data"+switch : r })
-            mess2.add_data({"type" : "PIO_ALL"})
-            self.myxpl.send(mess2)
 
 
 if __name__ == "__main__":

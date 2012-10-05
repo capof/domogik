@@ -85,20 +85,6 @@ class Onewire(Helper):
                     "desc" : "Show detail for all DS2401 devices",
                     "min_args" : 1,
                     "usage" : "ds2401 <adaptator device>"
-                  },
-                  "ds2438" : 
-                  {
-                    "cb" : self.ds2438,
-                    "desc" : "Show detail for all DS2438 devices",
-                    "min_args" : 1,
-                    "usage" : "ds2438 <adaptator device>"
-                  },
-                  "ds2408" :
-                  {
-                    "cb" : self.ds2408,
-                    "desc" : "Show detail for all DS2408/DS2406/DS2405 devices",
-                    "min_args" : 1,
-                    "usage" : "ds2408 <adaptator device>"
                   } 
                }
 
@@ -150,25 +136,6 @@ class Onewire(Helper):
         except OneWireException as err:
             raise HelperError(err.value)
         return self.my_ow.show_ds2401_detail()
-
-    def ds2438(self, args = None):
-        """ show ds2438 components
-        """
-        try:
-            self.my_ow = OneWireNetwork(args[0], self._log)
-        except OneWireException as err:
-            raise HelperError(err.value)
-        return self.my_ow.show_ds2438_detail()
-
-    def ds2408(self, args = None):
-        """ show ds2408 components
-        """
-        try:
-            self.my_ow = OneWireNetwork(args[0], self._log)
-        except OneWireException as err:
-            raise HelperError(err.value)
-        return self.my_ow.show_ds2408_detail()
-
 
 class OneWireException:
     """
@@ -275,55 +242,6 @@ class OneWireNetwork:
         for comp in self._root.find(type = "DS2401"):
             ret.append("DS2401 : id=%s" % comp.id)
             ret.append(display % ("Present", "yes"))
-        return ret
-
-
-    def show_ds2438_detail(self):
-        """ show ds2438 components
-        """
-        ret = []
-        display = " - %-30s : %s"
-        for comp in self._root.find(type = "DS2438"):
-            ret.append("DS2438 : id=%s" % comp.id)
-            ret.append(display % ("Temperature", comp.temperature))
-            ret.append(display % ("Humidity", comp.humidity))
-        return ret
-
-
-    def show_ds2408_detail(self):
-        """ show ds2408 components
-        """
-        ret = []
-        display = " - %-30s : %s"
-
-        for comp in self._root.find(type = "DS2405"):
-            ret.append("DS2405 : id=%s" % comp.id)
-            ret.append(display % ("SWITCH 0 ", comp.PIO))
-            
-        for comp in self._root.find(type = "DS2406"):
-            ret.append("DS2408 : id=%s" % comp.id)
-            ret.append(display % ("SWITCHS_ALL", comp.PIO_ALL))
-            ret.append(display % ("SWITCH 0 ", comp.PIO_A))
-            ret.append(display % ("SWITCH 1 ", comp.PIO_B))
-        
-        for comp in self._root.find(type = "DS2408"):
-            ret.append("DS2408 : id=%s" % comp.id)
-            ret.append(display % ("SWITCHS_ALL", comp.PIO_ALL))
-            ret.append(display % ("SWITCH 0 ", comp.PIO_0))
-            ret.append(display % ("SWITCH 1 ", comp.PIO_1))
-            ret.append(display % ("SWITCH 2 ", comp.PIO_2))
-            ret.append(display % ("SWITCH 3 ", comp.PIO_3))
-            ret.append(display % ("SWITCH 4 ", comp.PIO_4))
-            ret.append(display % ("SWITCH 5 ", comp.PIO_5))
-            ret.append(display % ("SWITCH 6 ", comp.PIO_6))
-            ret.append(display % ("SWITCH 7 ", comp.PIO_7))
-        
-        for comp in self._root.find(type = "DS2413"):
-            ret.append("DS2408 : id=%s" % comp.id)
-            ret.append(display % ("SWITCHS_ALL", comp.PIO_ALL))
-            ret.append(display % ("SWITCH 0 ", comp.PIO_A))
-            ret.append(display % ("SWITCH 1 ", comp.PIO_B))
-            
         return ret
 
 
